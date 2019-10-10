@@ -18,5 +18,6 @@ jobs:
       env:
         JAVA_OPTS: -Xms512m -Xmx1024m
       run: |
+        java -version
         ./gradlew -v
         ./gradlew clean build :arrow-benchmarks-fx:jmhClasses
