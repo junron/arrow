@@ -1,13 +1,12 @@
 package arrow.meta.plugins.comprehensions
 
-import arrow.meta.plugin.testing.CompilationResult
 import arrow.meta.plugin.testing.CompilationData
-import arrow.meta.plugin.testing.assertCompilation
+import arrow.meta.plugin.testing.assertThis
 import arrow.meta.plugin.testing.CompilationStatus
-import arrow.meta.plugin.testing.invoke
-import arrow.meta.plugin.testing.getFieldFrom
-import arrow.meta.plugin.testing.InvocationData
-import org.assertj.core.api.Assertions.assertThat
+import arrow.meta.plugin.testing.Check.GeneratedClasses
+import arrow.meta.plugin.testing.Check.Call
+import arrow.meta.plugin.testing.Result
+import arrow.meta.plugin.testing.Field
 import org.junit.Test
 
 class ComprehensionsTest {
@@ -35,11 +34,9 @@ class ComprehensionsTest {
 
   @Test
   fun `simple_case`() {
-
-    val compilationResult: CompilationResult? = assertCompilation(
-      CompilationData(
-        sourceFileName = "SimpleCase.kt",
-        sourceContent = """
+    assertThis(CompilationData(
+      sourceFilename = "SimpleCase.kt",
+      sourceCode = """
           $IO_CLASS_4_TESTS
           
           fun test(): IO<Int> =
@@ -49,33 +46,30 @@ class ComprehensionsTest {
               a + b
             }
           """,
-        generatedFileContent = null,
-        generatedClasses = arrayListOf(
-          "SimpleCaseKt", "IO", "IO\$Companion", "SimpleCaseKt\$\$test\$lambda-1\$lambda-0\$1", "\$test\$lambda-1\$0"),
-        compilationStatus = CompilationStatus.OK
-      )
-    )
-
-    assertThat(compilationResult).isNotNull
-
-    val resultForTest = invoke(
-      InvocationData(
-        classesDirectory = compilationResult?.classesDirectory,
-        className = "SimpleCaseKt",
-        methodName = "test"
-      )
-    )
-    assertThat(resultForTest::class.simpleName).isEqualTo("IO")
-    assertThat(getFieldFrom(resultForTest, "value")).isEqualTo(3)
+      checks = listOf(
+        GeneratedClasses(filenamesWithoutExt = listOf(
+          "SimpleCaseKt", "IO", "IO\$Companion", "SimpleCaseKt\$\$test\$lambda-1\$lambda-0\$1", "\$test\$lambda-1\$0")),
+        Call(
+          simpleClassName = "SimpleCaseKt",
+          methodName = "test",
+          output = Result(
+            simpleClassName = "IO",
+            fields = listOf(Field(
+              name = "value",
+              simpleClassName = "Int",
+              value = 3
+            ))
+          ))
+      ),
+      compilationStatus = CompilationStatus.OK
+    ))
   }
 
   @Test
   fun `simple_case_with_type_inference`() {
-
-    val compilationResult: CompilationResult? = assertCompilation(
-      CompilationData(
-        sourceFileName = "SimpleCase.kt",
-        sourceContent = """
+    assertThis(CompilationData(
+      sourceFilename = "SimpleCase.kt",
+      sourceCode = """
           $IO_CLASS_4_TESTS
           
           fun test(): IO<Int> =
@@ -85,36 +79,30 @@ class ComprehensionsTest {
               a + b
             }
           """,
-        generatedFileContent = null,
-        generatedClasses = arrayListOf(
-          "SimpleCaseKt", "IO", "IO\$Companion", "SimpleCaseKt\$\$test\$lambda-1\$lambda-0\$1", "\$test\$lambda-1\$0"),
-        compilationStatus = CompilationStatus.OK
-      )
-    )
-
-    assertThat(compilationResult).isNotNull
-
-    val resultForTest = invoke(
-      InvocationData(
-        classesDirectory = compilationResult?.classesDirectory,
-        className = "SimpleCaseKt",
-        methodName = "test"
-      )
-    )
-    assertThat(resultForTest::class.simpleName).isEqualTo("IO")
-
-    val field = getFieldFrom(resultForTest, "value")
-    assertThat(field).isEqualTo(3)
-    assertThat(field::class).isEqualTo(Int::class)
+      checks = listOf(
+        GeneratedClasses(filenamesWithoutExt = listOf(
+          "SimpleCaseKt", "IO", "IO\$Companion", "SimpleCaseKt\$\$test\$lambda-1\$lambda-0\$1", "\$test\$lambda-1\$0")),
+        Call(
+          simpleClassName = "SimpleCaseKt",
+          methodName = "test",
+          output = Result(
+            simpleClassName = "IO",
+            fields = listOf(Field(
+              name = "value",
+              simpleClassName = "Int",
+              value = 3
+            ))
+          ))
+      ),
+      compilationStatus = CompilationStatus.OK
+    ))
   }
 
   @Test
   fun `nested_case_with_type_inference`() {
-
-    val compilationResult: CompilationResult? = assertCompilation(
-      CompilationData(
-        sourceFileName = "SimpleCase.kt",
-        sourceContent = """
+    assertThis(CompilationData(
+      sourceFilename = "SimpleCase.kt",
+      sourceCode = """
           $IO_CLASS_4_TESTS
           
           fun test(): IO<Int> =
@@ -132,28 +120,24 @@ class ComprehensionsTest {
               a + b
             }
           """,
-        generatedFileContent = null,
-        generatedClasses = arrayListOf(
+      checks = listOf(
+        GeneratedClasses(filenamesWithoutExt = listOf(
           "SimpleCaseKt", "IO", "IO\$Companion", "SimpleCaseKt\$\$test\$lambda-1\$lambda-0\$2",
           "SimpleCaseKt\$\$test\$lambda-5\$lambda-3\$4", "SimpleCaseKt\$\$test\$lambda-5\$lambda-3\$lambda-2\$3",
-          "SimpleCaseKt\$\$test\$lambda-5\$lambda-4\$5", "\$test\$lambda-1\$0", "\$test\$lambda-5\$1"),
-        compilationStatus = CompilationStatus.OK
-      )
-    )
-
-    assertThat(compilationResult).isNotNull
-
-    val resultForTest = invoke(
-      InvocationData(
-        classesDirectory = compilationResult?.classesDirectory,
-        className = "SimpleCaseKt",
-        methodName = "test"
-      )
-    )
-    assertThat(resultForTest::class.simpleName).isEqualTo("IO")
-
-    val field = getFieldFrom(resultForTest, "value")
-    assertThat(field).isEqualTo(10)
-    assertThat(field::class).isEqualTo(Int::class)
+          "SimpleCaseKt\$\$test\$lambda-5\$lambda-4\$5", "\$test\$lambda-1\$0", "\$test\$lambda-5\$1")),
+        Call(
+          simpleClassName = "SimpleCaseKt",
+          methodName = "test",
+          output = Result(
+            simpleClassName = "IO",
+            fields = listOf(Field(
+              name = "value",
+              simpleClassName = "Int",
+              value = 10
+            ))
+          ))
+      ),
+      compilationStatus = CompilationStatus.OK
+    ))
   }
 }

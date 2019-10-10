@@ -7,38 +7,13 @@ import java.io.File
 import java.nio.file.Paths
 import io.github.classgraph.ClassGraph
 import java.net.URLClassLoader
-import kotlin.collections.ArrayList
 
-enum class CompilationStatus {
-  OK,
-  INTERNAL_ERROR,
-  COMPILATION_ERROR,
-  SCRIPT_EXECUTION_ERROR
-}
+fun assertThis(compilationData: CompilationData): Unit {
 
-data class CompilationData(
-  val sourceFileName: String,
-  val sourceContent: String,
-  val generatedFileContent: String?,
-  val generatedClasses: ArrayList<String>,
-  val compilationStatus: CompilationStatus
-)
+  val sourceFilename = compilationData.sourceFilename
 
-data class CompilationResult(
-  val classesDirectory: String
-)
-
-data class InvocationData(
-  val classesDirectory: String?,
-  val className: String,
-  val methodName: String
-)
-
-fun assertCompilation(compilationData: CompilationData): CompilationResult? {
-  val kotlinSource = SourceFile.kotlin(compilationData.sourceFileName, compilationData.sourceContent)
-
-  val result = KotlinCompilation().apply {
-    sources = listOf(kotlinSource)
+  val compilationResult = KotlinCompilation().apply {
+    sources = listOf(SourceFile.kotlin(sourceFilename, compilationData.sourceCode))
     //
     // TODO: waiting for the arrow-annotations release which contains higherkind annotation
     //    classpaths = listOf(classpathOf("arrow-annotations:x.x.x"))
@@ -47,59 +22,67 @@ fun assertCompilation(compilationData: CompilationData): CompilationResult? {
     pluginClasspaths = listOf(classpathOf("compiler-plugin"))
   }.compile()
 
-  assertThat(result.exitCode).isEqualTo(exitCodeFrom(compilationData.compilationStatus))
+  compilationData.checks.forEach {
+    when (it) {
+      is Check.GeneratedSourceCode -> {
+        val actualGeneratedFileContent = getGeneratedFileContentFrom(compilationResult.outputDirectory, sourceFilename)
+        val actualGeneratedFileContentWithoutCommands = removeCommandsFrom(actualGeneratedFileContent)
+        val generatedFileContentWithoutCommands = removeCommandsFrom(it.code)
 
-  if (result.exitCode == KotlinCompilation.ExitCode.OK) {
-    testConditions(compilationData, result)
-    return CompilationResult(classesDirectory = result.outputDirectory.absolutePath)
+        assertThat(actualGeneratedFileContentWithoutCommands).isEqualToIgnoringNewLines(generatedFileContentWithoutCommands)
+      }
+      is Check.GeneratedClasses -> assertGeneratedClasses(it, compilationResult)
+      is Check.Call -> assertCall(it, compilationResult)
+    }
   }
-  return null
+  assertThat(exitStatusFrom(compilationResult.exitCode)).isEqualTo(compilationData.compilationStatus)
 }
 
 fun contentFromResource(fromClass: Class<Any>, resourceName: String): String =
   fromClass.getResource(resourceName).readText()
 
-fun invoke(invocationData: InvocationData): Any =
-  getClassLoaderForGeneratedClasses(invocationData.classesDirectory).loadClass(invocationData.className).getMethod(invocationData.methodName).invoke(null)
+private fun assertGeneratedClasses(generatedClasses: Check.GeneratedClasses, compilationResult: KotlinCompilation.Result) {
+  val actualGeneratedClasses = classFilenamesFrom(compilationResult.generatedFiles)
+  val expectedGeneratedClasses = createClassFilenamesFrom(generatedClasses.filenamesWithoutExt)
 
-fun getFieldFrom(result: Any, fieldName: String): Any =
-  result.javaClass.getField(fieldName).get(result)
+  assertThat(actualGeneratedClasses).containsExactlyInAnyOrder(*expectedGeneratedClasses.toTypedArray())
+}
+
+private fun assertCall(call: Check.Call, compilationResult: KotlinCompilation.Result) {
+  val classLoader = URLClassLoader(arrayOf(compilationResult.outputDirectory.toURI().toURL()))
+  val resultForTest = classLoader.loadClass(call.simpleClassName).getMethod(call.methodName).invoke(null)
+
+  assertThat(resultForTest::class.simpleName).isEqualTo(call.output.simpleClassName)
+
+  call.output.fields.forEach { field ->
+    val foundField = resultForTest.javaClass.getField(field.name).get(resultForTest)
+
+    assertThat(foundField).isEqualTo(field.value)
+    assertThat(foundField::class.simpleName).isEqualTo(field.simpleClassName)
+  }
+}
+
+private fun getGeneratedFileContentFrom(outputDirectory: File, sourceFilename: String): String =
+  Paths.get(outputDirectory.parent, "sources", "$sourceFilename.meta").toFile().readText()
+
+private fun createClassFilenamesFrom(filenamesWithoutExt: List<String>): List<String> =
+  filenamesWithoutExt.map { "$it.class" }
+
+private fun classFilenamesFrom(generatedFiles: Collection<File>): List<String> =
+  generatedFiles.map { it.name }.filter { it.endsWith(".class") }
 
 private fun classpathOf(dependency: String): File {
   val regex = Regex(".*${dependency.replace(':', '-')}.*")
   return ClassGraph().classpathFiles.first { classpath -> classpath.name.matches(regex) }
 }
 
-private fun testConditions(compilationData: CompilationData, result: KotlinCompilation.Result): Unit {
-  testMetaFile(compilationData, result)
-  testGeneratedClasses(compilationData, result)
-}
-
-private fun testMetaFile(compilationData: CompilationData, result: KotlinCompilation.Result): Unit {
-  if (!compilationData.generatedFileContent.isNullOrEmpty()) {
-    val actualGeneratedFileContent = Paths.get(result.outputDirectory.parent, "sources", "${compilationData.sourceFileName}.meta").toFile().readText()
-    val actualGeneratedFileContentWithoutCommands = removeCommandsFrom(actualGeneratedFileContent)
-    val generatedFileContentWithoutCommands = removeCommandsFrom(compilationData.generatedFileContent)
-
-    assertThat(actualGeneratedFileContentWithoutCommands).isEqualToIgnoringNewLines(generatedFileContentWithoutCommands)
-  }
-}
-
 private fun removeCommandsFrom(actualGeneratedFileContent: String): String =
-  actualGeneratedFileContent.lines().filter { !it.startsWith("//meta") }.joinToString()
+  actualGeneratedFileContent.lines().filter { !it.startsWith(META_PREFIX) }.joinToString()
 
-private fun testGeneratedClasses(compilationData: CompilationData, result: KotlinCompilation.Result): Unit {
-  val actualGeneratedClasses = result.generatedFiles.map { it.name }.filter { it.endsWith(".class") }
-  assertThat(actualGeneratedClasses).containsExactlyInAnyOrder(*compilationData.generatedClasses.map { "$it.class" }.toTypedArray())
-}
-
-private fun exitCodeFrom(compilationStatus: CompilationStatus): KotlinCompilation.ExitCode =
-  when (compilationStatus) {
-    CompilationStatus.OK -> KotlinCompilation.ExitCode.OK
-    CompilationStatus.INTERNAL_ERROR -> KotlinCompilation.ExitCode.INTERNAL_ERROR
-    CompilationStatus.COMPILATION_ERROR -> KotlinCompilation.ExitCode.COMPILATION_ERROR
-    CompilationStatus.SCRIPT_EXECUTION_ERROR -> KotlinCompilation.ExitCode.SCRIPT_EXECUTION_ERROR
+private fun exitStatusFrom(exitCode: KotlinCompilation.ExitCode): CompilationStatus =
+  when (exitCode) {
+    KotlinCompilation.ExitCode.OK -> CompilationStatus.OK
+    KotlinCompilation.ExitCode.INTERNAL_ERROR -> CompilationStatus.INTERNAL_ERROR
+    KotlinCompilation.ExitCode.COMPILATION_ERROR -> CompilationStatus.COMPILATION_ERROR
+    KotlinCompilation.ExitCode.SCRIPT_EXECUTION_ERROR -> CompilationStatus.SCRIPT_EXECUTION_ERROR
   }
-
-private fun getClassLoaderForGeneratedClasses(classesDirectory: String?): ClassLoader =
-  URLClassLoader(arrayOf(File(classesDirectory).toURI().toURL()))
