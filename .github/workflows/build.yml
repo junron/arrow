@@ -13,7 +13,10 @@ jobs:
       uses: actions/setup-java@v1
       with:
         java-version: 1.8
+        architecture: x64
     - name: Build with Gradle
       env:
         JAVA_OPTS: -Xms512m -Xmx1024m
-      run: ./gradlew clean build :arrow-benchmarks-fx:jmhClasses
+      run: |
+        ./gradlew -v
+        ./gradlew clean build :arrow-benchmarks-fx:jmhClasses
