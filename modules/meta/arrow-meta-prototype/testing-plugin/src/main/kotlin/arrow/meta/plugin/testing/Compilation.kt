@@ -54,12 +54,11 @@ private fun assertCall(call: Check.Call, compilationResult: KotlinCompilation.Re
 
   assertThat(resultForTest::class.simpleName).isEqualTo(call.output.simpleClassName)
 
-  call.output.fields.forEach { field ->
-    val foundField = resultForTest.javaClass.getField(field.name).get(resultForTest)
+  val expectedField = call.output.field
+  val actualField = resultForTest.javaClass.getField(expectedField.name).get(resultForTest)
 
-    assertThat(foundField).isEqualTo(field.value)
-    assertThat(foundField::class.simpleName).isEqualTo(field.simpleClassName)
-  }
+  assertThat(actualField).isEqualTo(expectedField.value)
+  assertThat(actualField::class).isEqualTo(expectedField.value::class)
 }
 
 private fun getGeneratedFileContentFrom(outputDirectory: File, sourceFilename: String): String =

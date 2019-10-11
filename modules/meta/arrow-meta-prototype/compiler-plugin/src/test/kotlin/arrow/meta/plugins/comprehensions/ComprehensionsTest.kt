@@ -1,12 +1,12 @@
 package arrow.meta.plugins.comprehensions
 
-import arrow.meta.plugin.testing.CompilationData
-import arrow.meta.plugin.testing.assertThis
-import arrow.meta.plugin.testing.CompilationStatus
-import arrow.meta.plugin.testing.Check.GeneratedClasses
 import arrow.meta.plugin.testing.Check.Call
-import arrow.meta.plugin.testing.Result
+import arrow.meta.plugin.testing.Check.GeneratedClasses
+import arrow.meta.plugin.testing.CompilationData
+import arrow.meta.plugin.testing.CompilationStatus
 import arrow.meta.plugin.testing.Field
+import arrow.meta.plugin.testing.Result
+import arrow.meta.plugin.testing.assertThis
 import org.junit.Test
 
 class ComprehensionsTest {
@@ -54,11 +54,7 @@ class ComprehensionsTest {
           methodName = "test",
           output = Result(
             simpleClassName = "IO",
-            fields = listOf(Field(
-              name = "value",
-              simpleClassName = "Int",
-              value = 3
-            ))
+            field = Field(name = "value", value = 3)
           ))
       ),
       compilationStatus = CompilationStatus.OK
@@ -87,11 +83,7 @@ class ComprehensionsTest {
           methodName = "test",
           output = Result(
             simpleClassName = "IO",
-            fields = listOf(Field(
-              name = "value",
-              simpleClassName = "Int",
-              value = 3
-            ))
+            field = Field(name = "value", value = 3)
           ))
       ),
       compilationStatus = CompilationStatus.OK
@@ -130,11 +122,7 @@ class ComprehensionsTest {
           methodName = "test",
           output = Result(
             simpleClassName = "IO",
-            fields = listOf(Field(
-              name = "value",
-              simpleClassName = "Int",
-              value = 10
-            ))
+            field = Field(name = "value", value = 10)
           ))
       ),
       compilationStatus = CompilationStatus.OK

@@ -37,11 +37,10 @@ sealed class Check {
 
 data class Field(
   val name: String,
-  val simpleClassName: String,
   val value: Any
 )
 
 data class Result(
   val simpleClassName: String,
-  val fields: List<Field>
+  val field: Field
 )
