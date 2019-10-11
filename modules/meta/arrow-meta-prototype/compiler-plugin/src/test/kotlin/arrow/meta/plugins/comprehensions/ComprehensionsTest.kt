@@ -35,7 +35,7 @@ class ComprehensionsTest {
   @Test
   fun `simple_case`() {
     assertThis(CompilationData(
-      sourceFilename = "SimpleCase.kt",
+      sourceFilename = "Example.kt",
       sourceCode = """
           $IO_CLASS_4_TESTS
           
@@ -48,9 +48,9 @@ class ComprehensionsTest {
           """,
       checks = listOf(
         GeneratedClasses(filenamesWithoutExt = listOf(
-          "SimpleCaseKt", "IO", "IO\$Companion", "SimpleCaseKt\$\$test\$lambda-1\$lambda-0\$1", "\$test\$lambda-1\$0")),
+          "ExampleKt", "IO", "IO\$Companion", "ExampleKt\$\$test\$lambda-1\$lambda-0\$1", "\$test\$lambda-1\$0")),
         Call(
-          simpleClassName = "SimpleCaseKt",
+          simpleClassName = "ExampleKt",
           methodName = "test",
           output = Result(
             simpleClassName = "IO",
@@ -64,7 +64,7 @@ class ComprehensionsTest {
   @Test
   fun `simple_case_with_type_inference`() {
     assertThis(CompilationData(
-      sourceFilename = "SimpleCase.kt",
+      sourceFilename = "Example.kt",
       sourceCode = """
           $IO_CLASS_4_TESTS
           
@@ -77,9 +77,9 @@ class ComprehensionsTest {
           """,
       checks = listOf(
         GeneratedClasses(filenamesWithoutExt = listOf(
-          "SimpleCaseKt", "IO", "IO\$Companion", "SimpleCaseKt\$\$test\$lambda-1\$lambda-0\$1", "\$test\$lambda-1\$0")),
+          "ExampleKt", "IO", "IO\$Companion", "ExampleKt\$\$test\$lambda-1\$lambda-0\$1", "\$test\$lambda-1\$0")),
         Call(
-          simpleClassName = "SimpleCaseKt",
+          simpleClassName = "ExampleKt",
           methodName = "test",
           output = Result(
             simpleClassName = "IO",
@@ -93,7 +93,7 @@ class ComprehensionsTest {
   @Test
   fun `nested_case_with_type_inference`() {
     assertThis(CompilationData(
-      sourceFilename = "SimpleCase.kt",
+      sourceFilename = "Example.kt",
       sourceCode = """
           $IO_CLASS_4_TESTS
           
@@ -114,15 +114,52 @@ class ComprehensionsTest {
           """,
       checks = listOf(
         GeneratedClasses(filenamesWithoutExt = listOf(
-          "SimpleCaseKt", "IO", "IO\$Companion", "SimpleCaseKt\$\$test\$lambda-1\$lambda-0\$2",
-          "SimpleCaseKt\$\$test\$lambda-5\$lambda-3\$4", "SimpleCaseKt\$\$test\$lambda-5\$lambda-3\$lambda-2\$3",
-          "SimpleCaseKt\$\$test\$lambda-5\$lambda-4\$5", "\$test\$lambda-1\$0", "\$test\$lambda-5\$1")),
+          "ExampleKt", "IO", "IO\$Companion", "ExampleKt\$\$test\$lambda-1\$lambda-0\$2",
+          "ExampleKt\$\$test\$lambda-5\$lambda-3\$4", "ExampleKt\$\$test\$lambda-5\$lambda-3\$lambda-2\$3",
+          "ExampleKt\$\$test\$lambda-5\$lambda-4\$5", "\$test\$lambda-1\$0", "\$test\$lambda-5\$1")),
         Call(
-          simpleClassName = "SimpleCaseKt",
+          simpleClassName = "ExampleKt",
           methodName = "test",
           output = Result(
             simpleClassName = "IO",
             field = Field(name = "value", value = 10)
+          ))
+      ),
+      compilationStatus = CompilationStatus.OK
+    ))
+  }
+
+  @Test
+  fun `mixed_properties_and_expressions`() {
+    assertThis(CompilationData(
+      sourceFilename = "Example.kt",
+      sourceCode = """
+          $IO_CLASS_4_TESTS
+          
+          fun test(): IO<Int> = 
+            IO.fx {
+              val a by IO(1)
+              val t = a + 1
+              val b by IO(2)
+              val y = a + b
+              val f by IO(3)
+              val n = a + 1
+              val g by IO(4)
+              y + f + g + t + n
+            }
+        """,
+      checks = listOf(
+        GeneratedClasses(filenamesWithoutExt = listOf(
+          "ExampleKt", "IO", "IO\$Companion", "ExampleKt\$\$test\$lambda-3\$lambda-2\$3",
+          "ExampleKt\$\$test\$lambda-3\$lambda-2\$lambda-1\$2",
+          "ExampleKt\$\$test\$lambda-3\$lambda-2\$lambda-1\$lambda-0\$1", "\$test\$lambda-3\$0"
+        )),
+        Call(
+          simpleClassName = "ExampleKt",
+          methodName = "test",
+          output = Result(
+            simpleClassName = "IO",
+            field = Field(name = "value", value = 14)
           ))
       ),
       compilationStatus = CompilationStatus.OK
